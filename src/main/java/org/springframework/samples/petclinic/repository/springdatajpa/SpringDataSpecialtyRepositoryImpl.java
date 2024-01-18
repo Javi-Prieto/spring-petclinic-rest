@@ -19,8 +19,14 @@ package org.springframework.samples.petclinic.repository.springdatajpa;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.samples.petclinic.model.Specialty;
+import org.springframework.samples.petclinic.model.Vet;
+import org.springframework.samples.petclinic.repository.VetRepository;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author Vitaliy Fedoriv
@@ -33,12 +39,25 @@ public class SpringDataSpecialtyRepositoryImpl implements SpecialtyRepositoryOve
 	@PersistenceContext
     private EntityManager em;
 
-	@Override
-	public void delete(Specialty specialty) {
+    @Autowired
+    private VetRepository repositoryVet;
+
+    @Override
+    public void delete(Specialty specialty) {
         this.em.remove(this.em.contains(specialty) ? specialty : this.em.merge(specialty));
-		Integer specId = specialty.getId();
-		this.em.createNativeQuery("DELETE FROM vet_specialties WHERE specialty_id=" + specId).executeUpdate();
-		this.em.createQuery("DELETE FROM Specialty specialty WHERE id=" + specId).executeUpdate();
-	}
+        Integer specId = specialty.getId();
+        List<Vet> modVets = repositoryVet.findAll().stream().filter(v -> v.getSpecialties().contains(specialty)).toList();
+        List<Specialty> unm;
+        List<Specialty> toSave = new ArrayList<>();
+        for (Vet v : modVets){
+            unm = v.getSpecialties();
+            toSave.addAll(unm);
+            toSave.remove(specialty);
+            v.clearSpecialties();
+            toSave.forEach(v::addSpecialty);
+        }
+        this.em.createNativeQuery("DELETE FROM vet_specialties WHERE specialty_id=" + specId).executeUpdate();
+        this.em.createQuery("DELETE FROM Specialty specialty WHERE id=" + specId).executeUpdate();
+    }
 
 }
