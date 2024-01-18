@@ -47,12 +47,14 @@ public class SpecialtyDataJPATest {
 
     @Test
     void testDeleteSpecialty(){
+        Specialty specialty = repo.findById(1);
+        repo.delete(specialty);
+        assertNotEquals(specialty, repo.findById(1));
         Specialty s2 = repo.findById(3);
         em.detach(s2);
         repo.delete(s2);
         assertNotEquals(s2, repo.findById(3));
         Specialty s3 = repo.findById(2);
-        em.detach(s3);
         repo.delete(s3);
         assertNotEquals(s3, repo.findById(2));
     }
